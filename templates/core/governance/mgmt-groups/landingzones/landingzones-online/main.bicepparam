@@ -3,7 +3,6 @@ using './main.bicep'
 // General Parameters
 param parLocations = [
   'westus2'
-  ''
 ]
 param parEnableTelemetry = true
 
@@ -20,7 +19,7 @@ param landingZonesOnlineConfig = {
   customerPolicyDefs: []
   customerPolicySetDefs: []
   customerPolicyAssignments: []
-  subscriptionsToPlaceInManagementGroup: []
+  subscriptionsToPlaceInManagementGroup: ['966a8e3c-bd80-41dd-8910-506aab21e18b']
   waitForConsistencyCounterBeforeCustomPolicyDefinitions: 10
   waitForConsistencyCounterBeforeCustomPolicySetDefinitions: 10
   waitForConsistencyCounterBeforeCustomRoleDefinitions: 10

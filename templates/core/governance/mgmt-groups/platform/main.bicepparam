@@ -3,7 +3,6 @@ using './main.bicep'
 // General Parameters
 param parLocations = [
   'westus2'
-  ''
 ]
 param parEnableTelemetry = true
 

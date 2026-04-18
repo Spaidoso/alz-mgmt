@@ -59,11 +59,14 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 1. **Bootstrap (Phase 2)**: 496 resources via Terraform (one-time). GitHub repos, UAMIs, OIDC federated credentials, MG `alz`, branch protection, environments, Actions variables all created.
 2. **Phase 3 PR #1**: Merged. Customized networking (Firewall Basic, VpnGw1, no Bastion/ER/DDoS/DNS Resolver, single region) and governance (DDoS policy exclusion, Online LZ sub placement, single-element parLocations).
 3. **CI pipeline**: Validated — Bicep build/lint passed, all 18 what-if steps passed.
+4. **RBAC fixes**: Apply UAMI granted Owner + Plan UAMI granted Reader directly on sub `966a8e3c` (wasn't under `alz` MG yet).
 
 ### Pending / In Progress
-4. **CD pipeline (run 24578771115)**: Re-triggered after fixing RBAC. First attempt failed because Online LZ sub (`966a8e3c`) wasn't yet under `alz` MG so the apply UAMI lacked permissions. Fix: granted apply UAMI Owner + plan UAMI Reader directly on that sub.
-   - **Action needed**: Approve `alz-mgmt-apply` environment at https://github.com/Spaidoso/alz-mgmt/actions/runs/24578771115
-   - If the run ID has changed due to re-run, check `gh run list` for the latest CD run.
+5. **CD pipeline**: Multiple runs have hit ARM API rate limits during What-If phase.
+   - **Run 24578771115**: Failed at "Plan: Governance-Platform" step due to `Too Many Requests on TenantandUserLevel`
+   - **Run 24607691490**: Currently in progress (as of 2026-04-18 ~10:25 AM)
+   - **Root cause**: ALZ governance templates contain hundreds of policy definitions; each What-If makes many ARM API calls, exhausting the 150 requests/minute tenant-level limit
+   - **Workaround**: Wait 1-2 minutes between workflow runs; don't run CI and CD simultaneously
 
 ### Azure Identity (for troubleshooting)
 - **Apply UAMI**: `id-alz-mgmt-westus2-apply-001` — principal `a8915b05-4eca-49f7-917a-40cac673b1c5` — has Owner at MG `alz` + Owner on sub `966a8e3c`
@@ -94,3 +97,48 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 ### Cost Notes
 - Estimated monthly: ~$430 (Firewall Basic ~$288 + VpnGw1 ~$138 + Log Analytics minimal)
 - No Bastion, ExpressRoute, DDoS, or DNS Private Resolver to reduce costs
+
+## Documentation Maintenance Guidelines
+
+**IMPORTANT**: When making changes to this repository, you MUST update the relevant documentation:
+
+### Files to Update
+
+| Change Type | Update These Files |
+|-------------|-------------------|
+| New/modified subscriptions | `README.md` (Subscription Mapping), this file (Subscription Mapping) |
+| Management group changes | `README.md` (MG Hierarchy), this file (MG Hierarchy) |
+| Networking changes (VNet, subnets, peering) | `README.md` (Networking Design), this file (Networking Design) |
+| New Azure resources | `README.md` (Cost Estimates), this file (Cost Notes) |
+| Policy changes/exclusions | `README.md` (Policy Exclusions), this file (Governance Notes) |
+| CI/CD workflow changes | `README.md` (CI/CD Pipelines) |
+| Identity/RBAC changes | `README.md` (Troubleshooting - Azure Identity), this file (Azure Identity) |
+| Completed planned work | Remove from "Planned Future Work" in both files |
+
+### Documentation Checklist
+
+Before completing any PR, verify:
+1. [ ] `README.md` reflects the current state after your changes
+2. [ ] `.github/copilot-instructions.md` is updated with any new constraints, conventions, or context
+3. [ ] Cost estimates are updated if adding/removing paid resources
+4. [ ] Subscription/MG mappings are accurate
+5. [ ] Any new "protected resources" or constraints are documented
+
+### Style Guidelines
+
+- Keep `README.md` user-facing and concise — focus on "what" and "how"
+- Keep `copilot-instructions.md` detailed with context — focus on "why" and constraints
+- Use tables for structured data (subscriptions, costs, etc.)
+- Use code blocks for CLI commands and file paths
+- Mark completed tasks with ✅ and pending with ❌ or [ ]
+
+## Troubleshooting Reference
+
+### Common Issues
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `Too Many Requests on TenantandUserLevel` | ARM API rate limit (150 req/min) | Wait 1-2 min, re-run. Don't run CI+CD simultaneously |
+| `AuthorizationFailed` on What-If | UAMI lacks permissions at scope | Add Reader (plan) or Owner (apply) at appropriate MG/sub |
+| Bicep build errors | Outdated ALZ library | Run `tooling/Update-AlzLibraryReferences.ps1` |
+| GitHub CLI auth fails with `gho_*` token | SAML enforcement blocks OAuth | Use classic PAT (`ghp_*`) via `$env:GH_TOKEN` |

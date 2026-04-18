@@ -140,6 +140,12 @@ Workflows use shared templates from `Spaidoso/alz-mgmt-templates`:
 - `.github/workflows/ci-template.yaml` - Bicep validation + What-If
 - `.github/workflows/cd-template.yaml` - What-If + Deploy
 
+> **Note:** The `alz-mgmt-templates` repo also has branch protection on `main`. To modify workflow templates:
+> 1. Clone `alz-mgmt-templates` and create a feature branch
+> 2. Make changes and push the branch
+> 3. Create and merge a PR to `main`
+> 4. Re-run the `alz-mgmt` workflow to pick up the changes
+
 ### CI Pipeline (`01 Azure Landing Zones Continuous Integration`)
 
 Triggers on: Pull requests to `main`

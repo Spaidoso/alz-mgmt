@@ -41,7 +41,8 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 
 ## Key Conventions
 
-- All changes go through **PRs to main** — never push directly
+- All changes to `alz-mgmt` go through **PRs to main** — never push directly (branch is protected)
+- `alz-mgmt-templates` also has branch protection — create PR, merge, then re-run `alz-mgmt` workflows
 - CI validates Bicep syntax/lint + runs `what-if` against all MGs
 - CD runs on merge to main with a manual approval gate before deploy
 - File structure: `templates/core/governance/` (MGs, policies, RBAC), `templates/core/logging/` (Log Analytics), `templates/networking/hubnetworking/` (hub VNet, firewall, VPN, DNS)

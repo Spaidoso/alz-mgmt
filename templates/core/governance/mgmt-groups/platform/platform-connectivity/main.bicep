@@ -21,12 +21,6 @@ param parEnableTelemetry bool = true
 @description('Optional. Policy assignment parameter overrides. Specify only the policy parameter values you want to change (logAnalytics, etc.). Role definitions are hardcoded variables and cannot be overridden.')
 param parPolicyAssignmentParameterOverrides object = {}
 
-var builtInRoleDefinitionIds = {
-  contributor: '/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c'
-  networkContributor: '/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7'
-  reader: '/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7'
-}
-
 var alzRbacRoleDefsJson = []
 
 var alzPolicyDefsJson = []
@@ -34,83 +28,13 @@ var alzPolicyDefsJson = []
 var alzPolicySetDefsJson = []
 
 // DDoS policy assignment removed - no DDoS Protection Plan deployed (cost optimization)
+// All policy assignments cleared, so use empty array to avoid Bicep type inference issues with empty objects
 var alzPolicyAssignmentsJson = []
 
-var alzPolicyAssignmentRoleDefinitions = {}
-
 var managementGroupFinalName = platformConnectivityConfig.?managementGroupName ?? 'connectivity'
-var intRootManagementGroupFinalName = platformConnectivityConfig.?managementGroupIntermediateRootName ?? 'alz'
 
-var alzPolicyAssignmentsWithOverrides = [
-  for policyAssignment in alzPolicyAssignmentsJson: union(
-    policyAssignment,
-    contains(parPolicyAssignmentParameterOverrides, policyAssignment.name)
-      ? {
-          location: parPolicyAssignmentParameterOverrides[policyAssignment.name].?location ?? parLocations[0]
-          identity: policyAssignment.?identity
-          properties: union(
-            policyAssignment.properties,
-            parPolicyAssignmentParameterOverrides[policyAssignment.name].?scope != null
-              ? {
-                  scope: parPolicyAssignmentParameterOverrides[policyAssignment.name].scope
-                }
-              : {
-                  scope: '/providers/Microsoft.Management/managementGroups/${managementGroupFinalName}'
-                },
-            contains(parPolicyAssignmentParameterOverrides[policyAssignment.name], 'parameters')
-              ? {
-                  parameters: union(
-                    policyAssignment.properties.?parameters ?? {},
-                    parPolicyAssignmentParameterOverrides[policyAssignment.name].parameters
-                  )
-                }
-              : {},
-            contains(alzPolicyAssignmentRoleDefinitions, policyAssignment.name)
-              ? {
-                  roleDefinitionIds: alzPolicyAssignmentRoleDefinitions[policyAssignment.name]
-                }
-              : {},
-            {
-              policyDefinitionId: replace(
-                replace(
-                  policyAssignment.properties.policyDefinitionId,
-                  '/providers/Microsoft.Management/managementGroups/${managementGroupFinalName}/',
-                  '/providers/Microsoft.Management/managementGroups/${intRootManagementGroupFinalName}/'
-                ),
-                '/providers/Microsoft.Management/managementGroups/alz/',
-                '/providers/Microsoft.Management/managementGroups/${intRootManagementGroupFinalName}/'
-              )
-            }
-          )
-        }
-      : {
-          location: parLocations[0]
-          identity: policyAssignment.?identity
-          properties: union(
-            policyAssignment.properties,
-            {
-              scope: '/providers/Microsoft.Management/managementGroups/${managementGroupFinalName}'
-            },
-            contains(alzPolicyAssignmentRoleDefinitions, policyAssignment.name)
-              ? {
-                  roleDefinitionIds: alzPolicyAssignmentRoleDefinitions[policyAssignment.name]
-                }
-              : {},
-            {
-              policyDefinitionId: replace(
-                replace(
-                  policyAssignment.properties.policyDefinitionId,
-                  '/providers/Microsoft.Management/managementGroups/${managementGroupFinalName}/',
-                  '/providers/Microsoft.Management/managementGroups/${intRootManagementGroupFinalName}/'
-                ),
-                '/providers/Microsoft.Management/managementGroups/alz/',
-                '/providers/Microsoft.Management/managementGroups/${intRootManagementGroupFinalName}/'
-              )
-            }
-          )
-        }
-  )
-]
+// Simplified: no policy assignments to process, so no complex for-loop needed
+var alzPolicyAssignmentsWithOverrides = []
 
 var unionedRbacRoleDefs = union(alzRbacRoleDefsJson, platformConnectivityConfig.?customerRbacRoleDefs ?? [])
 

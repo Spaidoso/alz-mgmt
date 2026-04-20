@@ -60,7 +60,7 @@ param hubNetworks = [
     vpnGatewaySettings: {
       deployVpnGateway: true
       name: 'vgw-alz-${parLocations[0]}'
-      skuName: 'VpnGw1'
+      skuName: 'VpnGw1AZ'
       vpnMode: 'activePassiveNoBgp'
       vpnType: 'RouteBased'
       publicIpZones: []

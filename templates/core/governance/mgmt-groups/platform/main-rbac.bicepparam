@@ -2,5 +2,5 @@ using './main-rbac.bicep'
 
 param parPlatformManagementGroupName = 'platform'
 param parConnectivityManagementGroupName = 'connectivity'
-param parManagementGroupExcludedPolicyAssignments = []
+param parManagementGroupExcludedPolicyAssignments = ['Enable-DDoS-VNET']
 param parEnableTelemetry = true

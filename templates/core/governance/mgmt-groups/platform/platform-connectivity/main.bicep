@@ -33,13 +33,10 @@ var alzPolicyDefsJson = []
 
 var alzPolicySetDefsJson = []
 
-var alzPolicyAssignmentsJson = [
-  loadJsonContent('../../../lib/alz/platform/connectivity/Enable-DDoS-VNET.alz_policy_assignment.json')
-]
+// DDoS policy assignment removed - no DDoS Protection Plan deployed (cost optimization)
+var alzPolicyAssignmentsJson = []
 
-var alzPolicyAssignmentRoleDefinitions = {
-  'Enable-DDoS-VNET': [builtInRoleDefinitionIds.networkContributor]
-}
+var alzPolicyAssignmentRoleDefinitions = {}
 
 var managementGroupFinalName = platformConnectivityConfig.?managementGroupName ?? 'connectivity'
 var intRootManagementGroupFinalName = platformConnectivityConfig.?managementGroupIntermediateRootName ?? 'alz'

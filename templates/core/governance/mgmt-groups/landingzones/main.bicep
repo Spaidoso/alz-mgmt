@@ -63,7 +63,7 @@ var alzPolicyAssignmentsJson = [
   loadJsonContent('../../lib/alz/landingzones/Deploy-VMSS-ChangeTrack.alz_policy_assignment.json')
   loadJsonContent('../../lib/alz/landingzones/Deploy-VMSS-Monitoring.alz_policy_assignment.json')
   loadJsonContent('../../lib/alz/landingzones/Enable-AUM-CheckUpdates.alz_policy_assignment.json')
-  loadJsonContent('../../lib/alz/landingzones/Enable-DDoS-VNET.alz_policy_assignment.json')
+  // Enable-DDoS-VNET removed - no DDoS Protection Plan deployed (cost optimization)
   loadJsonContent('../../lib/alz/landingzones/Enforce-AKS-HTTPS.alz_policy_assignment.json')
   loadJsonContent('../../lib/alz/landingzones/Enforce-ASR.alz_policy_assignment.json')
   loadJsonContent('../../lib/alz/landingzones/Enforce-Encrypt-CMK0.alz_policy_assignment.json')
@@ -106,7 +106,7 @@ var alzPolicyAssignmentRoleDefinitions = {
     builtInRoleDefinitionIds.managedIdentityContributor
   ]
   'Deploy-VM-Backup': [builtInRoleDefinitionIds.owner]
-  'Enable-DDoS-VNET': [builtInRoleDefinitionIds.networkContributor]
+  // Enable-DDoS-VNET removed - no DDoS Protection Plan deployed
   'Enforce-TLS-SSL-Q225': [builtInRoleDefinitionIds.owner]
   'Deploy-AzSqlDb-Auditing': [
     builtInRoleDefinitionIds.logAnalyticsContributor

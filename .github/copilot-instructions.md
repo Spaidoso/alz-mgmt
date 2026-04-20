@@ -27,11 +27,11 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 
 - **Hub VNet**: `10.0.0.0/22` in westus2
 - **Azure Firewall Basic** (cost-optimized, ~$288/mo)
-- **VPN Gateway VpnGw1** non-AZ, active-passive (NOT active-active BGP)
+- **VPN Gateway VpnGw1AZ** zone-redundant, active-passive (NOT active-active BGP)
 - **No Bastion** — use JIT VM access instead
 - **No ExpressRoute**, **No DDoS Protection Plan**, **No DNS Private Resolver**
 - **Private DNS Zones**: Enabled for privatelink resolution
-- The `main.bicep` type definition was modified to allow non-AZ VPN SKUs (`VpnGw1`, `VpnGw2`, `VpnGw3`)
+- Non-AZ VPN SKUs (`VpnGw1`–`VpnGw5`) are deprecated by Azure; only AZ SKUs are allowed
 
 ## Governance Notes
 
@@ -58,7 +58,7 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 
 ### Completed
 1. **Bootstrap (Phase 2)**: 496 resources via Terraform (one-time). GitHub repos, UAMIs, OIDC federated credentials, MG `alz`, branch protection, environments, Actions variables all created.
-2. **Phase 3 PR #1**: Merged. Customized networking (Firewall Basic, VpnGw1, no Bastion/ER/DDoS/DNS Resolver, single region) and governance (DDoS policy exclusion, Online LZ sub placement, single-element parLocations).
+2. **Phase 3 PR #1**: Merged. Customized networking (Firewall Basic, VpnGw1AZ, no Bastion/ER/DDoS/DNS Resolver, single region) and governance (DDoS policy exclusion, Online LZ sub placement, single-element parLocations).
 3. **CI pipeline**: Validated — Bicep build/lint passed, all 18 what-if steps passed.
 4. **RBAC fixes**: Apply UAMI granted Owner + Plan UAMI granted Reader directly on sub `966a8e3c` (wasn't under `alz` MG yet).
 
@@ -96,7 +96,7 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 - Online LZ subscription intentionally NOT peered to hub
 
 ### Cost Notes
-- Estimated monthly: ~$430 (Firewall Basic ~$288 + VpnGw1 ~$138 + Log Analytics minimal)
+- Estimated monthly: ~$445 (Firewall Basic ~$288 + VpnGw1AZ ~$153 + Log Analytics minimal)
 - No Bastion, ExpressRoute, DDoS, or DNS Private Resolver to reduce costs
 
 ## Documentation Maintenance Guidelines

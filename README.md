@@ -108,7 +108,7 @@ alz-mgmt/
 | Resource | SKU / Configuration |
 |----------|---------------------|
 | **Azure Firewall** | Basic (~$288/mo) |
-| **VPN Gateway** | VpnGw1, active-passive, no BGP (~$138/mo) |
+| **VPN Gateway** | VpnGw1AZ, zone-redundant, active-passive, no BGP (~$153/mo) |
 | **Private DNS Zones** | Enabled for privatelink resolution |
 
 ### NOT Deployed (Cost Optimization)
@@ -223,9 +223,9 @@ The Azure org has SAML enforcement. Use a classic PAT (`ghp_` prefix) via `$env:
 | Resource | Monthly Cost |
 |----------|--------------|
 | Azure Firewall Basic | ~$288 |
-| VPN Gateway VpnGw1 | ~$138 |
+| VPN Gateway VpnGw1AZ | ~$153 |
 | Log Analytics | Minimal |
-| **Total** | **~$430/month** |
+| **Total** | **~$445/month** |
 
 ---
 

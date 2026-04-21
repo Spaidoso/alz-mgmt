@@ -1075,7 +1075,7 @@ type vpnGatewaySettingsType = {
   name: string?
 
   @description('Optional. The SKU name of the virtual network gateway.')
-  skuName: 'VpnGw1' | 'VpnGw2' | 'VpnGw3' | 'VpnGw1AZ' | 'VpnGw2AZ' | 'VpnGw3AZ' | 'VpnGw4AZ' | 'VpnGw5AZ'
+  skuName: 'VpnGw1AZ' | 'VpnGw2AZ' | 'VpnGw3AZ' | 'VpnGw4AZ' | 'VpnGw5AZ'
 
   @description('Optional. The VPN gateway configuration mode. Determines active/passive setup and BGP usage.')
   vpnMode: ('activeActiveBgp' | 'activeActiveNoBgp' | 'activePassiveBgp' | 'activePassiveNoBgp')?

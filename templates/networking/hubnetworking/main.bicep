@@ -230,7 +230,10 @@ module resAzureFirewall 'br/public:avm/res/network/azure-firewall:0.9.2' = [
       threatIntelMode: (hub.?azureFirewallSettings.?azureSkuTier == 'Standard')
         ? 'Alert'
         : hub.?azureFirewallSettings.?threatIntelMode ?? 'Alert'
-      availabilityZones: hub.?azureFirewallSettings.?zones ?? hubAzureFirewallRecommendedZones[i]
+      // Basic SKU does not support availability zones
+      availabilityZones: hub.?azureFirewallSettings.?azureSkuTier == 'Basic'
+        ? []
+        : hub.?azureFirewallSettings.?zones ?? hubAzureFirewallRecommendedZones[i]
       virtualNetworkResourceId: resHubVirtualNetwork[i].outputs.resourceId
       lock: hub.?azureFirewallSettings.?lock ?? parGlobalResourceLock
       tags: hub.?azureFirewallSettings.?tags ?? parTags
@@ -623,7 +626,8 @@ module resVpnGateway 'br/public:avm/res/network/virtual-network-gateway:0.10.1' 
         : [
             'vgw-alz-${hub.location}-${uniqueString(parHubNetworkingResourceGroupNamePrefix, hub.name, hub.location, 'vpn')}'
           ]
-      publicIpAvailabilityZones: hub.?vpnGatewaySettings.?skuName != 'Basic'
+      // Only AZ SKUs (ending with 'AZ') support availability zones - VpnGw1, VpnGw2, etc. do NOT
+      publicIpAvailabilityZones: endsWith(hub.?vpnGatewaySettings.?skuName ?? 'VpnGw1AZ', 'AZ')
         ? hub.?vpnGatewaySettings.?publicIpZones ?? publicIpRecommendedZones[i]
         : []
       lock: hub.?vpnGatewaySettings.?lock ?? parGlobalResourceLock

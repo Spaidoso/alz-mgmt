@@ -32,6 +32,8 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 - **No ExpressRoute**, **No DDoS Protection Plan**, **No DNS Private Resolver**
 - **Private DNS Zones**: Enabled for privatelink resolution
 - Non-AZ VPN SKUs (`VpnGw1`–`VpnGw5`) are deprecated by Azure; only AZ SKUs are allowed
+- **Online LZ existing workload VNet**: `sfgameserver-vnet` (`10.0.0.0/16`) in RG `spaidoso-lz-online-gameserver-rg`
+- **Shared runner subnet target**: `snet-github-runner` (`10.0.1.0/24`) in the existing Online LZ VNet
 
 ## Governance Notes
 
@@ -46,6 +48,7 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 - CI validates Bicep syntax/lint + runs `what-if` against all MGs
 - CD runs on merge to main with a manual approval gate before deploy
 - File structure: `templates/core/governance/` (MGs, policies, RBAC), `templates/core/logging/` (Log Analytics), `templates/networking/hubnetworking/` (hub VNet, firewall, VPN, DNS)
+- Workload runner module path: `templates/workload/github-runner/` (subscription-scoped deployment in Online LZ)
 - `parameters.json` at repo root maps subscription IDs and location variables used by CI/CD workflows
 
 ## Protected Resources

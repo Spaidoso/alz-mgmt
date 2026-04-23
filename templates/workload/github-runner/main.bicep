@@ -50,6 +50,7 @@ param parRunnerKeyVaultPublicNetworkAccess string = 'Disabled'
 @description('Required. Existing Key Vault private DNS zone resource ID used by the Online LZ VNet.')
 param parRunnerKeyVaultPrivateDnsZoneId string = '/subscriptions/82ce8884-3284-4808-b77e-8dd9b0175d4c/resourceGroups/rg-alz-dns-${parLocations[0]}/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net'
 
+
 @description('Required. Local admin username for the runner VM.')
 param parRunnerAdminUsername string = 'alzrunneradmin'
 
@@ -78,6 +79,7 @@ param parRunnerSshSecretNames object = {
   public: 'ssh-public'
   private: 'ssh-private'
 }
+
 
 @description('Optional. OS image SKU for the runner VM.')
 param parUbuntuSku string = '22_04-lts-gen2'

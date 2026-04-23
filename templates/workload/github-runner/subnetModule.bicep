@@ -105,6 +105,7 @@ resource resRunnerSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' 
   name: parRunnerSubnetName
   properties: {
     addressPrefix: parRunnerSubnetPrefix
+    privateEndpointNetworkPolicies: 'Disabled'
     networkSecurityGroup: {
       id: resRunnerSubnetNsg.id
     }

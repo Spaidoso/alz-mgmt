@@ -1,0 +1,188 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.42.1.51946",
+      "templateHash": "519671350543318160"
+    },
+    "name": "ALZ Workload - Runner Key Vault",
+    "description": "Creates the dedicated Key Vault, private endpoint, and runner MI RBAC for shared runner SSH material."
+  },
+  "parameters": {
+    "parLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Resource location."
+      }
+    },
+    "parRunnerKeyVaultName": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Key Vault name."
+      }
+    },
+    "parRunnerKeyVaultPrivateEndpointName": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Private endpoint name for the runner Key Vault."
+      }
+    },
+    "parRunnerKeyVaultPrivateDnsZoneGroupName": {
+      "type": "string",
+      "defaultValue": "default",
+      "metadata": {
+        "description": "Optional. Private DNS zone group name for the runner Key Vault private endpoint."
+      }
+    },
+    "parRunnerKeyVaultPublicNetworkAccess": {
+      "type": "string",
+      "defaultValue": "Disabled",
+      "metadata": {
+        "description": "Optional. Public network access mode for the runner Key Vault."
+      }
+    },
+    "parRunnerKeyVaultPrivateDnsZoneId": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Resource ID of the existing private DNS zone for Key Vault private endpoints."
+      }
+    },
+    "parRunnerSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Resource ID of the runner subnet that hosts the VM and Key Vault private endpoint."
+      }
+    },
+    "parRunnerVmPrincipalId": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Principal ID of the runner VM managed identity."
+      }
+    },
+    "parRunnerSshSecretNames": {
+      "type": "object",
+      "defaultValue": {
+        "public": "ssh-public",
+        "private": "ssh-private"
+      },
+      "metadata": {
+        "description": "Optional. Secret names reserved for the runner SSH keypair."
+      }
+    },
+    "parTags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Optional. Tags applied to created resources."
+      }
+    }
+  },
+  "variables": {
+    "varKeyVaultSecretsUserRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2024-11-01",
+      "name": "[parameters('parRunnerKeyVaultName')]",
+      "location": "[parameters('parLocation')]",
+      "tags": "[union(parameters('parTags'), createObject('runnerSshPublicKeySecretName', string(parameters('parRunnerSshSecretNames').public), 'runnerSshPrivateKeySecretName', string(parameters('parRunnerSshSecretNames').private)))]",
+      "properties": {
+        "tenantId": "[tenant().tenantId]",
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "accessPolicies": [],
+        "enableRbacAuthorization": true,
+        "enableSoftDelete": true,
+        "enablePurgeProtection": true,
+        "softDeleteRetentionInDays": 90,
+        "publicNetworkAccess": "[parameters('parRunnerKeyVaultPublicNetworkAccess')]",
+        "networkAcls": {
+          "bypass": "None",
+          "defaultAction": "Deny"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2024-05-01",
+      "name": "[parameters('parRunnerKeyVaultPrivateEndpointName')]",
+      "location": "[parameters('parLocation')]",
+      "tags": "[parameters('parTags')]",
+      "properties": {
+        "subnet": {
+          "id": "[parameters('parRunnerSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "[format('{0}-vault', parameters('parRunnerKeyVaultName'))]",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.KeyVault/vaults', parameters('parRunnerKeyVaultName'))]",
+              "groupIds": [
+                "vault"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('parRunnerKeyVaultName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2024-05-01",
+      "name": "[format('{0}/{1}', parameters('parRunnerKeyVaultPrivateEndpointName'), parameters('parRunnerKeyVaultPrivateDnsZoneGroupName'))]",
+      "properties": {
+        "privateDnsZoneConfigs": [
+          {
+            "name": "vaultcore",
+            "properties": {
+              "privateDnsZoneId": "[parameters('parRunnerKeyVaultPrivateDnsZoneId')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateEndpoints', parameters('parRunnerKeyVaultPrivateEndpointName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('parRunnerKeyVaultName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('parRunnerKeyVaultName')), parameters('parRunnerVmPrincipalId'), variables('varKeyVaultSecretsUserRoleDefinitionId'))]",
+      "properties": {
+        "roleDefinitionId": "[variables('varKeyVaultSecretsUserRoleDefinitionId')]",
+        "principalId": "[parameters('parRunnerVmPrincipalId')]",
+        "principalType": "ServicePrincipal",
+        "description": "Allows the shared GitHub runner VM managed identity to read SSH key secrets from the runner Key Vault."
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('parRunnerKeyVaultName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "outRunnerKeyVaultId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('parRunnerKeyVaultName'))]"
+    },
+    "outRunnerKeyVaultName": {
+      "type": "string",
+      "value": "[parameters('parRunnerKeyVaultName')]"
+    },
+    "outRunnerKeyVaultUri": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('parRunnerKeyVaultName')), '2024-11-01').vaultUri]"
+    },
+    "outRunnerKeyVaultPrivateEndpointId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/privateEndpoints', parameters('parRunnerKeyVaultPrivateEndpointName'))]"
+    }
+  }
+}

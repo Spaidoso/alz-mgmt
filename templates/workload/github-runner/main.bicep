@@ -35,6 +35,22 @@ param parRunnerNicName string = 'nic-alz-github-runner-${parLocations[0]}-001'
 @description('Optional. Runner VM size.')
 param parRunnerVmSize string = 'Standard_B2s'
 
+@description('Optional. Runner Key Vault name.')
+param parRunnerKeyVaultName string = 'kv-alz-github-runner-${parLocations[0]}-001'
+
+@description('Optional. Runner Key Vault private endpoint name.')
+param parRunnerKeyVaultPrivateEndpointName string = 'pep-alz-github-runner-kv-${parLocations[0]}-001'
+
+@description('Optional. Private DNS zone group name for the runner Key Vault private endpoint.')
+param parRunnerKeyVaultPrivateDnsZoneGroupName string = 'default'
+
+@description('Optional. Public network access mode for the runner Key Vault.')
+param parRunnerKeyVaultPublicNetworkAccess string = 'Disabled'
+
+@description('Required. Existing Key Vault private DNS zone resource ID used by the Online LZ VNet.')
+param parRunnerKeyVaultPrivateDnsZoneId string = '/subscriptions/82ce8884-3284-4808-b77e-8dd9b0175d4c/resourceGroups/rg-alz-dns-${parLocations[0]}/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net'
+
+
 @description('Required. Local admin username for the runner VM.')
 param parRunnerAdminUsername string = 'alzrunneradmin'
 
@@ -57,6 +73,13 @@ param parGithubRunnerRegistrationToken string = ''
 
 @description('Optional. Tags applied to created resources.')
 param parTags object = {}
+
+@description('Optional. Secret names reserved for the runner SSH keypair in the runner Key Vault.')
+param parRunnerSshSecretNames object = {
+  public: 'ssh-public'
+  private: 'ssh-private'
+}
+
 
 @description('Optional. OS image SKU for the runner VM.')
 param parUbuntuSku string = '22_04-lts-gen2'
@@ -103,6 +126,30 @@ module modRunnerVm './runnerVm.bicep' = {
   }
 }
 
+module modRunnerKeyVault './keyVaultModule.bicep' = {
+  name: 'modRunnerKeyVault-${uniqueString(parRunnerResourceGroupName, parRunnerKeyVaultName, parLocations[0])}'
+  scope: resourceGroup(parRunnerResourceGroupName)
+  dependsOn: [
+    resRunnerResourceGroup
+  ]
+  params: {
+    parLocation: parLocations[0]
+    parRunnerKeyVaultName: parRunnerKeyVaultName
+    parRunnerKeyVaultPrivateEndpointName: parRunnerKeyVaultPrivateEndpointName
+    parRunnerKeyVaultPrivateDnsZoneGroupName: parRunnerKeyVaultPrivateDnsZoneGroupName
+    parRunnerKeyVaultPublicNetworkAccess: parRunnerKeyVaultPublicNetworkAccess
+    parRunnerKeyVaultPrivateDnsZoneId: parRunnerKeyVaultPrivateDnsZoneId
+    parRunnerSubnetId: modRunnerSubnet.outputs.outRunnerSubnetId
+    parRunnerVmPrincipalId: modRunnerVm.outputs.outRunnerVmPrincipalId
+    parRunnerSshSecretNames: parRunnerSshSecretNames
+    parTags: parTags
+  }
+}
+
 output outRunnerVmResourceId string = modRunnerVm.outputs.outRunnerVmResourceId
 output outRunnerVmPrincipalId string = modRunnerVm.outputs.outRunnerVmPrincipalId
 output outRunnerSubnetId string = modRunnerSubnet.outputs.outRunnerSubnetId
+output outRunnerKeyVaultId string = modRunnerKeyVault.outputs.outRunnerKeyVaultId
+output outRunnerKeyVaultName string = modRunnerKeyVault.outputs.outRunnerKeyVaultName
+output outRunnerKeyVaultUri string = modRunnerKeyVault.outputs.outRunnerKeyVaultUri
+output outRunnerKeyVaultPrivateEndpointId string = modRunnerKeyVault.outputs.outRunnerKeyVaultPrivateEndpointId

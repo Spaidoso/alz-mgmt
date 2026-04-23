@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "8403005559119373266"
+      "templateHash": "14981563775795088226"
     },
     "name": "ALZ Workload - Runner Subnet",
     "description": "Creates a dedicated runner subnet and subnet NSG in the existing Online LZ VNet resource group."
@@ -132,6 +132,7 @@
       "name": "[format('{0}/{1}', parameters('parExistingVnetName'), parameters('parRunnerSubnetName'))]",
       "properties": {
         "addressPrefix": "[parameters('parRunnerSubnetPrefix')]",
+        "privateEndpointNetworkPolicies": "Disabled",
         "networkSecurityGroup": {
           "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('parRunnerNsgName'))]"
         }

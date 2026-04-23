@@ -50,6 +50,10 @@ on:
         description: 'Run Steps: Networking'
         type: boolean
         default: true
+      workload-github-runner:
+        description: 'Run Steps: Workload - Shared GitHub Runner Platform'
+        type: boolean
+        default: false
 
 jobs:
   plan_and_apply:
@@ -76,3 +80,4 @@ jobs:
       governance-landingzones-rbac: ${{ github.event_name != 'workflow_dispatch' && true || inputs.governance-rbac == true }}
       core-logging: ${{ github.event_name != 'workflow_dispatch' && true || inputs.core == true }}
       networking-hubnetworking: ${{ github.event_name != 'workflow_dispatch' && true || inputs.networking == true }}
+      workload-github-runner: ${{ github.event_name != 'workflow_dispatch' && false || inputs.workload-github-runner == true }}

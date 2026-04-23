@@ -69,6 +69,8 @@ alz-mgmt/
 │   └── networking/
 │       ├── hubnetworking/         # Hub VNet, Firewall, VPN Gateway, DNS
 │       └── virtualwan/            # Virtual WAN (not used)
+│   └── workload/
+│       └── github-runner/         # Shared self-hosted runner platform in Online LZ
 ├── parameters.json                # CI/CD environment variables
 ├── bicepconfig.json               # Bicep linter configuration
 └── README.md                      # This file
@@ -123,6 +125,13 @@ alz-mgmt/
 - **Online LZ** (`966a8e3c`) is intentionally **NOT peered** to the hub
 - Corp spokes will get UDR `0.0.0.0/0` → Firewall
 
+### Online LZ Workload Network
+
+- Existing workload VNet: `sfgameserver-vnet` in `spaidoso-lz-online-gameserver-rg`
+- Address space: `10.0.0.0/16`
+- Existing subnet: `default (10.0.0.0/24)`
+- New shared runner subnet (planned by this repo): `snet-github-runner (10.0.1.0/24)`
+
 ---
 
 ## CI/CD Pipelines
@@ -164,6 +173,12 @@ Deployment order:
 1. Governance (int-root → landingzones → platform → sandbox → decommissioned → RBAC)
 2. Core Logging
 3. Hub Networking
+4. Optional Workload Runner Platform (`workload-github-runner` toggle)
+
+### CD workflow_dispatch toggles
+
+- Existing governance/core/networking toggles remain unchanged.
+- New toggle: `workload-github-runner` (default `false`) deploys `templates/workload/github-runner` at subscription scope to the Online LZ subscription.
 
 ---
 

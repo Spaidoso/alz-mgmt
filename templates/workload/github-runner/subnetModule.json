@@ -1,0 +1,150 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.42.1.51946",
+      "templateHash": "8403005559119373266"
+    },
+    "name": "ALZ Workload - Runner Subnet",
+    "description": "Creates a dedicated runner subnet and subnet NSG in the existing Online LZ VNet resource group."
+  },
+  "parameters": {
+    "parExistingVnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Existing VNet name in this resource group."
+      }
+    },
+    "parRunnerSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Runner subnet name."
+      }
+    },
+    "parRunnerSubnetPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Runner subnet CIDR."
+      }
+    },
+    "parRunnerNsgName": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. NSG name for the runner subnet."
+      }
+    },
+    "parLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Resource location."
+      }
+    },
+    "parTags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Optional. Tags applied to resources."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2024-05-01",
+      "name": "[parameters('parRunnerNsgName')]",
+      "location": "[parameters('parLocation')]",
+      "tags": "[parameters('parTags')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Deny-Internet-Inbound",
+            "properties": {
+              "priority": 100,
+              "direction": "Inbound",
+              "access": "Deny",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "Allow-AzureDns-Outbound-UDP",
+            "properties": {
+              "priority": 100,
+              "direction": "Outbound",
+              "access": "Allow",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "53",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "AzureDNS"
+            }
+          },
+          {
+            "name": "Allow-AzureDns-Outbound-TCP",
+            "properties": {
+              "priority": 110,
+              "direction": "Outbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "53",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "AzureDNS"
+            }
+          },
+          {
+            "name": "Allow-Https-Outbound",
+            "properties": {
+              "priority": 120,
+              "direction": "Outbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "Internet"
+            }
+          },
+          {
+            "name": "Deny-All-Outbound",
+            "properties": {
+              "priority": 4096,
+              "direction": "Outbound",
+              "access": "Deny",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2024-05-01",
+      "name": "[format('{0}/{1}', parameters('parExistingVnetName'), parameters('parRunnerSubnetName'))]",
+      "properties": {
+        "addressPrefix": "[parameters('parRunnerSubnetPrefix')]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('parRunnerNsgName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('parRunnerNsgName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "outRunnerSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('parExistingVnetName'), parameters('parRunnerSubnetName'))]"
+    }
+  }
+}

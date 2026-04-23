@@ -1,0 +1,619 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.42.1.51946",
+      "templateHash": "1135670429077601185"
+    },
+    "name": "ALZ Workload - Shared GitHub Runner Platform",
+    "description": "Deploys a dedicated self-hosted GitHub Actions runner VM into the existing Online LZ VNet."
+  },
+  "parameters": {
+    "parLocations": {
+      "type": "array",
+      "defaultValue": [
+        "[deployment().location]"
+      ],
+      "metadata": {
+        "description": "Required. Deployment locations."
+      }
+    },
+    "parRunnerResourceGroupName": {
+      "type": "string",
+      "defaultValue": "[format('rg-alz-github-runner-{0}-001', parameters('parLocations')[0])]",
+      "metadata": {
+        "description": "Optional. The name of the runner resource group."
+      }
+    },
+    "parExistingOnlineResourceGroupName": {
+      "type": "string",
+      "defaultValue": "spaidoso-lz-online-gameserver-rg",
+      "metadata": {
+        "description": "Required. Existing resource group that contains the Online LZ VNet."
+      }
+    },
+    "parExistingVnetName": {
+      "type": "string",
+      "defaultValue": "sfgameserver-vnet",
+      "metadata": {
+        "description": "Required. Existing VNet name in the Online LZ resource group."
+      }
+    },
+    "parRunnerSubnetName": {
+      "type": "string",
+      "defaultValue": "snet-github-runner",
+      "metadata": {
+        "description": "Optional. Dedicated subnet name for the runner."
+      }
+    },
+    "parRunnerSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.1.0/24",
+      "metadata": {
+        "description": "Optional. Dedicated subnet CIDR for the runner subnet."
+      }
+    },
+    "parRunnerNsgName": {
+      "type": "string",
+      "defaultValue": "[format('nsg-alz-github-runner-{0}-001', parameters('parLocations')[0])]",
+      "metadata": {
+        "description": "Optional. Network security group name for the runner subnet."
+      }
+    },
+    "parRunnerVmName": {
+      "type": "string",
+      "defaultValue": "[format('vm-alz-github-runner-{0}-001', parameters('parLocations')[0])]",
+      "metadata": {
+        "description": "Optional. Runner VM name."
+      }
+    },
+    "parRunnerNicName": {
+      "type": "string",
+      "defaultValue": "[format('nic-alz-github-runner-{0}-001', parameters('parLocations')[0])]",
+      "metadata": {
+        "description": "Optional. Runner NIC name."
+      }
+    },
+    "parRunnerVmSize": {
+      "type": "string",
+      "defaultValue": "Standard_B2s",
+      "metadata": {
+        "description": "Optional. Runner VM size."
+      }
+    },
+    "parRunnerAdminUsername": {
+      "type": "string",
+      "defaultValue": "alzrunneradmin",
+      "metadata": {
+        "description": "Required. Local admin username for the runner VM."
+      }
+    },
+    "parRunnerAdminSshPublicKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Required for first deployment. Admin SSH public key for the runner VM."
+      }
+    },
+    "parGithubRunnerOrgUrl": {
+      "type": "string",
+      "defaultValue": "https://github.com/Spaidoso",
+      "metadata": {
+        "description": "Optional. GitHub organization URL for runner registration."
+      }
+    },
+    "parGithubRunnerGroup": {
+      "type": "string",
+      "defaultValue": "workload-runners",
+      "metadata": {
+        "description": "Optional. GitHub runner group name."
+      }
+    },
+    "parGithubRunnerNamePrefix": {
+      "type": "string",
+      "defaultValue": "alz-online",
+      "metadata": {
+        "description": "Optional. Prefix used to build the runner registration name."
+      }
+    },
+    "parGithubRunnerRegistrationToken": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. Short-lived GitHub runner registration token. If empty, runner registration is skipped."
+      }
+    },
+    "parTags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Optional. Tags applied to created resources."
+      }
+    },
+    "parUbuntuSku": {
+      "type": "string",
+      "defaultValue": "22_04-lts-gen2",
+      "metadata": {
+        "description": "Optional. OS image SKU for the runner VM."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2025-04-01",
+      "name": "[parameters('parRunnerResourceGroupName')]",
+      "location": "[parameters('parLocations')[0]]",
+      "tags": "[parameters('parTags')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('modRunnerSubnet-{0}', uniqueString(parameters('parExistingOnlineResourceGroupName'), parameters('parRunnerSubnetName'), parameters('parLocations')[0]))]",
+      "resourceGroup": "[parameters('parExistingOnlineResourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "parExistingVnetName": {
+            "value": "[parameters('parExistingVnetName')]"
+          },
+          "parRunnerSubnetName": {
+            "value": "[parameters('parRunnerSubnetName')]"
+          },
+          "parRunnerSubnetPrefix": {
+            "value": "[parameters('parRunnerSubnetPrefix')]"
+          },
+          "parRunnerNsgName": {
+            "value": "[parameters('parRunnerNsgName')]"
+          },
+          "parLocation": {
+            "value": "[parameters('parLocations')[0]]"
+          },
+          "parTags": {
+            "value": "[parameters('parTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.42.1.51946",
+              "templateHash": "8403005559119373266"
+            },
+            "name": "ALZ Workload - Runner Subnet",
+            "description": "Creates a dedicated runner subnet and subnet NSG in the existing Online LZ VNet resource group."
+          },
+          "parameters": {
+            "parExistingVnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Existing VNet name in this resource group."
+              }
+            },
+            "parRunnerSubnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Runner subnet name."
+              }
+            },
+            "parRunnerSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Runner subnet CIDR."
+              }
+            },
+            "parRunnerNsgName": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. NSG name for the runner subnet."
+              }
+            },
+            "parLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Resource location."
+              }
+            },
+            "parTags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. Tags applied to resources."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2024-05-01",
+              "name": "[parameters('parRunnerNsgName')]",
+              "location": "[parameters('parLocation')]",
+              "tags": "[parameters('parTags')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Deny-Internet-Inbound",
+                    "properties": {
+                      "priority": 100,
+                      "direction": "Inbound",
+                      "access": "Deny",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "Internet",
+                      "destinationAddressPrefix": "*"
+                    }
+                  },
+                  {
+                    "name": "Allow-AzureDns-Outbound-UDP",
+                    "properties": {
+                      "priority": 100,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "Udp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "53",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "AzureDNS"
+                    }
+                  },
+                  {
+                    "name": "Allow-AzureDns-Outbound-TCP",
+                    "properties": {
+                      "priority": 110,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "53",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "AzureDNS"
+                    }
+                  },
+                  {
+                    "name": "Allow-Https-Outbound",
+                    "properties": {
+                      "priority": 120,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "443",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "Internet"
+                    }
+                  },
+                  {
+                    "name": "Deny-All-Outbound",
+                    "properties": {
+                      "priority": 4096,
+                      "direction": "Outbound",
+                      "access": "Deny",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "*"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}/{1}', parameters('parExistingVnetName'), parameters('parRunnerSubnetName'))]",
+              "properties": {
+                "addressPrefix": "[parameters('parRunnerSubnetPrefix')]",
+                "networkSecurityGroup": {
+                  "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('parRunnerNsgName'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('parRunnerNsgName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "outRunnerSubnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('parExistingVnetName'), parameters('parRunnerSubnetName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('modRunnerVm-{0}', uniqueString(parameters('parRunnerResourceGroupName'), parameters('parRunnerVmName'), parameters('parLocations')[0]))]",
+      "resourceGroup": "[parameters('parRunnerResourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "parLocation": {
+            "value": "[parameters('parLocations')[0]]"
+          },
+          "parRunnerVmName": {
+            "value": "[parameters('parRunnerVmName')]"
+          },
+          "parRunnerNicName": {
+            "value": "[parameters('parRunnerNicName')]"
+          },
+          "parRunnerVmSize": {
+            "value": "[parameters('parRunnerVmSize')]"
+          },
+          "parRunnerAdminUsername": {
+            "value": "[parameters('parRunnerAdminUsername')]"
+          },
+          "parRunnerAdminSshPublicKey": {
+            "value": "[parameters('parRunnerAdminSshPublicKey')]"
+          },
+          "parRunnerSubnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('parExistingOnlineResourceGroupName')), 'Microsoft.Resources/deployments', format('modRunnerSubnet-{0}', uniqueString(parameters('parExistingOnlineResourceGroupName'), parameters('parRunnerSubnetName'), parameters('parLocations')[0]))), '2025-04-01').outputs.outRunnerSubnetId.value]"
+          },
+          "parGithubRunnerOrgUrl": {
+            "value": "[parameters('parGithubRunnerOrgUrl')]"
+          },
+          "parGithubRunnerGroup": {
+            "value": "[parameters('parGithubRunnerGroup')]"
+          },
+          "parGithubRunnerNamePrefix": {
+            "value": "[parameters('parGithubRunnerNamePrefix')]"
+          },
+          "parGithubRunnerRegistrationToken": {
+            "value": "[parameters('parGithubRunnerRegistrationToken')]"
+          },
+          "parUbuntuSku": {
+            "value": "[parameters('parUbuntuSku')]"
+          },
+          "parTags": {
+            "value": "[parameters('parTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.42.1.51946",
+              "templateHash": "15150184072071010913"
+            },
+            "name": "ALZ Workload - Runner VM",
+            "description": "Creates the dedicated GitHub self-hosted runner VM in the runner resource group."
+          },
+          "parameters": {
+            "parLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Resource location."
+              }
+            },
+            "parRunnerVmName": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Runner VM name."
+              }
+            },
+            "parRunnerNicName": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Runner NIC name."
+              }
+            },
+            "parRunnerVmSize": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Runner VM size."
+              }
+            },
+            "parRunnerAdminUsername": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Local admin username for the runner VM."
+              }
+            },
+            "parRunnerAdminSshPublicKey": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Required. Admin SSH public key for the runner VM."
+              }
+            },
+            "parRunnerSubnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Runner subnet resource ID."
+              }
+            },
+            "parGithubRunnerOrgUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "Optional. GitHub organization URL for runner registration."
+              }
+            },
+            "parGithubRunnerGroup": {
+              "type": "string",
+              "metadata": {
+                "description": "Optional. GitHub runner group name."
+              }
+            },
+            "parGithubRunnerNamePrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Optional. Prefix used to build the runner registration name."
+              }
+            },
+            "parGithubRunnerRegistrationToken": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Short-lived GitHub runner registration token. If empty, runner registration is skipped."
+              }
+            },
+            "parUbuntuSku": {
+              "type": "string",
+              "defaultValue": "22_04-lts-gen2",
+              "metadata": {
+                "description": "Optional. OS image SKU for the runner VM."
+              }
+            },
+            "parTags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. Tags applied to resources."
+              }
+            }
+          },
+          "variables": {
+            "varRunnerVersion": "2.317.0",
+            "varRunnerBootstrapLines": [
+              "#!/bin/bash",
+              "set -euo pipefail",
+              "",
+              "apt-get update -y",
+              "apt-get install -y curl jq unzip ca-certificates",
+              "",
+              "id -u actions >/dev/null 2>&1 || useradd -m -s /bin/bash actions",
+              "mkdir -p /opt/actions-runner",
+              "chown -R actions:actions /opt/actions-runner",
+              "",
+              "[format('TOKEN=\"{0}\"', parameters('parGithubRunnerRegistrationToken'))]",
+              "",
+              "if [ -z \"$TOKEN\" ]; then",
+              "  echo \"No GitHub registration token provided. Skipping runner registration.\"",
+              "  exit 0",
+              "fi",
+              "",
+              "[format('su - actions -c \"cd /opt/actions-runner && curl -fsSL -o actions-runner.tar.gz https://github.com/actions/runner/releases/download/v{0}/actions-runner-linux-x64-{1}.tar.gz\"', variables('varRunnerVersion'), variables('varRunnerVersion'))]",
+              "su - actions -c \"cd /opt/actions-runner && tar xzf actions-runner.tar.gz\"",
+              "[format('su - actions -c \"cd /opt/actions-runner && ./config.sh --url {0} --token $TOKEN --runnergroup {1} --name {2}-$(hostname) --labels workload-runners,online-lz --unattended --replace\"', parameters('parGithubRunnerOrgUrl'), parameters('parGithubRunnerGroup'), parameters('parGithubRunnerNamePrefix'))]",
+              "cd /opt/actions-runner",
+              "./svc.sh install actions",
+              "./svc.sh start"
+            ],
+            "varRunnerBootstrap": "[join(variables('varRunnerBootstrapLines'), '\n')]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkInterfaces",
+              "apiVersion": "2024-05-01",
+              "name": "[parameters('parRunnerNicName')]",
+              "location": "[parameters('parLocation')]",
+              "tags": "[parameters('parTags')]",
+              "properties": {
+                "ipConfigurations": [
+                  {
+                    "name": "ipconfig1",
+                    "properties": {
+                      "privateIPAllocationMethod": "Dynamic",
+                      "subnet": {
+                        "id": "[parameters('parRunnerSubnetId')]"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Compute/virtualMachines",
+              "apiVersion": "2024-07-01",
+              "name": "[parameters('parRunnerVmName')]",
+              "location": "[parameters('parLocation')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "tags": "[parameters('parTags')]",
+              "properties": {
+                "hardwareProfile": {
+                  "vmSize": "[parameters('parRunnerVmSize')]"
+                },
+                "osProfile": {
+                  "computerName": "[parameters('parRunnerVmName')]",
+                  "adminUsername": "[parameters('parRunnerAdminUsername')]",
+                  "customData": "[base64(variables('varRunnerBootstrap'))]",
+                  "linuxConfiguration": {
+                    "disablePasswordAuthentication": true,
+                    "ssh": {
+                      "publicKeys": [
+                        {
+                          "path": "[format('/home/{0}/.ssh/authorized_keys', parameters('parRunnerAdminUsername'))]",
+                          "keyData": "[parameters('parRunnerAdminSshPublicKey')]"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "storageProfile": {
+                  "imageReference": {
+                    "publisher": "Canonical",
+                    "offer": "0001-com-ubuntu-server-jammy",
+                    "sku": "[parameters('parUbuntuSku')]",
+                    "version": "latest"
+                  },
+                  "osDisk": {
+                    "createOption": "FromImage",
+                    "managedDisk": {
+                      "storageAccountType": "StandardSSD_LRS"
+                    }
+                  }
+                },
+                "networkProfile": {
+                  "networkInterfaces": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('parRunnerNicName'))]",
+                      "properties": {
+                        "primary": true
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('parRunnerNicName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "outRunnerVmResourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Compute/virtualMachines', parameters('parRunnerVmName'))]"
+            },
+            "outRunnerVmPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Compute/virtualMachines', parameters('parRunnerVmName')), '2024-07-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('parExistingOnlineResourceGroupName')), 'Microsoft.Resources/deployments', format('modRunnerSubnet-{0}', uniqueString(parameters('parExistingOnlineResourceGroupName'), parameters('parRunnerSubnetName'), parameters('parLocations')[0])))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('parRunnerResourceGroupName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "outRunnerVmResourceId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('parRunnerResourceGroupName')), 'Microsoft.Resources/deployments', format('modRunnerVm-{0}', uniqueString(parameters('parRunnerResourceGroupName'), parameters('parRunnerVmName'), parameters('parLocations')[0]))), '2025-04-01').outputs.outRunnerVmResourceId.value]"
+    },
+    "outRunnerVmPrincipalId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('parRunnerResourceGroupName')), 'Microsoft.Resources/deployments', format('modRunnerVm-{0}', uniqueString(parameters('parRunnerResourceGroupName'), parameters('parRunnerVmName'), parameters('parLocations')[0]))), '2025-04-01').outputs.outRunnerVmPrincipalId.value]"
+    },
+    "outRunnerSubnetId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('parExistingOnlineResourceGroupName')), 'Microsoft.Resources/deployments', format('modRunnerSubnet-{0}', uniqueString(parameters('parExistingOnlineResourceGroupName'), parameters('parRunnerSubnetName'), parameters('parLocations')[0]))), '2025-04-01').outputs.outRunnerSubnetId.value]"
+    }
+  }
+}

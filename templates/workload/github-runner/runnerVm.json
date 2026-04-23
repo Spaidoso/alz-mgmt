@@ -1,0 +1,215 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.42.1.51946",
+      "templateHash": "15150184072071010913"
+    },
+    "name": "ALZ Workload - Runner VM",
+    "description": "Creates the dedicated GitHub self-hosted runner VM in the runner resource group."
+  },
+  "parameters": {
+    "parLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Resource location."
+      }
+    },
+    "parRunnerVmName": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Runner VM name."
+      }
+    },
+    "parRunnerNicName": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Runner NIC name."
+      }
+    },
+    "parRunnerVmSize": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Runner VM size."
+      }
+    },
+    "parRunnerAdminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Local admin username for the runner VM."
+      }
+    },
+    "parRunnerAdminSshPublicKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Required. Admin SSH public key for the runner VM."
+      }
+    },
+    "parRunnerSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Runner subnet resource ID."
+      }
+    },
+    "parGithubRunnerOrgUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Optional. GitHub organization URL for runner registration."
+      }
+    },
+    "parGithubRunnerGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Optional. GitHub runner group name."
+      }
+    },
+    "parGithubRunnerNamePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Optional. Prefix used to build the runner registration name."
+      }
+    },
+    "parGithubRunnerRegistrationToken": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. Short-lived GitHub runner registration token. If empty, runner registration is skipped."
+      }
+    },
+    "parUbuntuSku": {
+      "type": "string",
+      "defaultValue": "22_04-lts-gen2",
+      "metadata": {
+        "description": "Optional. OS image SKU for the runner VM."
+      }
+    },
+    "parTags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Optional. Tags applied to resources."
+      }
+    }
+  },
+  "variables": {
+    "varRunnerVersion": "2.317.0",
+    "varRunnerBootstrapLines": [
+      "#!/bin/bash",
+      "set -euo pipefail",
+      "",
+      "apt-get update -y",
+      "apt-get install -y curl jq unzip ca-certificates",
+      "",
+      "id -u actions >/dev/null 2>&1 || useradd -m -s /bin/bash actions",
+      "mkdir -p /opt/actions-runner",
+      "chown -R actions:actions /opt/actions-runner",
+      "",
+      "[format('TOKEN=\"{0}\"', parameters('parGithubRunnerRegistrationToken'))]",
+      "",
+      "if [ -z \"$TOKEN\" ]; then",
+      "  echo \"No GitHub registration token provided. Skipping runner registration.\"",
+      "  exit 0",
+      "fi",
+      "",
+      "[format('su - actions -c \"cd /opt/actions-runner && curl -fsSL -o actions-runner.tar.gz https://github.com/actions/runner/releases/download/v{0}/actions-runner-linux-x64-{1}.tar.gz\"', variables('varRunnerVersion'), variables('varRunnerVersion'))]",
+      "su - actions -c \"cd /opt/actions-runner && tar xzf actions-runner.tar.gz\"",
+      "[format('su - actions -c \"cd /opt/actions-runner && ./config.sh --url {0} --token $TOKEN --runnergroup {1} --name {2}-$(hostname) --labels workload-runners,online-lz --unattended --replace\"', parameters('parGithubRunnerOrgUrl'), parameters('parGithubRunnerGroup'), parameters('parGithubRunnerNamePrefix'))]",
+      "cd /opt/actions-runner",
+      "./svc.sh install actions",
+      "./svc.sh start"
+    ],
+    "varRunnerBootstrap": "[join(variables('varRunnerBootstrapLines'), '\n')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2024-05-01",
+      "name": "[parameters('parRunnerNicName')]",
+      "location": "[parameters('parLocation')]",
+      "tags": "[parameters('parTags')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[parameters('parRunnerSubnetId')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-07-01",
+      "name": "[parameters('parRunnerVmName')]",
+      "location": "[parameters('parLocation')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "tags": "[parameters('parTags')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('parRunnerVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('parRunnerVmName')]",
+          "adminUsername": "[parameters('parRunnerAdminUsername')]",
+          "customData": "[base64(variables('varRunnerBootstrap'))]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[format('/home/{0}/.ssh/authorized_keys', parameters('parRunnerAdminUsername'))]",
+                  "keyData": "[parameters('parRunnerAdminSshPublicKey')]"
+                }
+              ]
+            }
+          }
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "0001-com-ubuntu-server-jammy",
+            "sku": "[parameters('parUbuntuSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "StandardSSD_LRS"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('parRunnerNicName'))]",
+              "properties": {
+                "primary": true
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('parRunnerNicName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "outRunnerVmResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Compute/virtualMachines', parameters('parRunnerVmName'))]"
+    },
+    "outRunnerVmPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Compute/virtualMachines', parameters('parRunnerVmName')), '2024-07-01', 'full').identity.principalId]"
+    }
+  }
+}

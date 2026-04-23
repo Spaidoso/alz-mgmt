@@ -131,6 +131,7 @@ alz-mgmt/
 - Address space: `10.0.0.0/16`
 - Existing subnet: `default (10.0.0.0/24)`
 - New shared runner subnet (planned by this repo): `snet-github-runner (10.0.1.0/24)`
+- Shared runner Key Vault uses a private endpoint in `snet-github-runner` and resolves through the existing `privatelink.vaultcore.azure.net` private DNS zone.
 
 ---
 
@@ -173,12 +174,28 @@ Deployment order:
 1. Governance (int-root → landingzones → platform → sandbox → decommissioned → RBAC)
 2. Core Logging
 3. Hub Networking
-4. Optional Workload Runner Platform (`workload-github-runner` toggle)
+4. Workload Runner Platform (`templates/workload/github-runner`) including the runner VM, runner Key Vault, and Key Vault private endpoint
 
 ### CD workflow_dispatch toggles
 
 - Existing governance/core/networking toggles remain unchanged.
-- New toggle: `workload-github-runner` (default `false`) deploys `templates/workload/github-runner` at subscription scope to the Online LZ subscription.
+- `workload-github-runner` remains available for manual workflow dispatch and defaults to `false` there.
+- Pushes to `main` now include the runner platform automatically after approval in `alz-mgmt-apply`.
+
+### Shared Runner Platform
+
+The shared runner deployment now creates:
+
+- Dedicated runner resource group: `rg-alz-github-runner-westus2-001`
+- Runner VM with system-assigned managed identity
+- Dedicated runner subnet and NSG in the existing Online LZ VNet
+- Private-endpoint-enabled Key Vault for runner SSH material
+
+Operational steps after the first approved CD run:
+
+1. Upload the SSH public key and private key to the new Key Vault as separate secrets.
+2. Perform the just-in-time GitHub runner registration step.
+3. Validate the runner can resolve the Key Vault over private link and that future workload deployments can reuse the stored public key.
 
 ---
 
@@ -240,7 +257,8 @@ The Azure org has SAML enforcement. Use a classic PAT (`ghp_` prefix) via `$env:
 | Azure Firewall Basic | ~$288 |
 | VPN Gateway VpnGw1AZ | ~$153 |
 | Log Analytics | Minimal |
-| **Total** | **~$445/month** |
+| Shared runner VM + Key Vault + Private Endpoint | Additional cost above current baseline |
+| **Total** | **Higher than the current ~$445/month baseline once the runner platform is deployed** |
 
 ---
 

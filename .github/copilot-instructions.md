@@ -34,6 +34,7 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 - Non-AZ VPN SKUs (`VpnGw1`–`VpnGw5`) are deprecated by Azure; only AZ SKUs are allowed
 - **Online LZ existing workload VNet**: `sfgameserver-vnet` (`10.0.0.0/16`) in RG `spaidoso-lz-online-gameserver-rg`
 - **Shared runner subnet target**: `snet-github-runner` (`10.0.1.0/24`) in the existing Online LZ VNet
+- **Shared runner Key Vault**: must use a private endpoint in `snet-github-runner` and resolve through `privatelink.vaultcore.azure.net`
 
 ## Governance Notes
 
@@ -49,6 +50,7 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 - CD runs on merge to main with a manual approval gate before deploy
 - File structure: `templates/core/governance/` (MGs, policies, RBAC), `templates/core/logging/` (Log Analytics), `templates/networking/hubnetworking/` (hub VNet, firewall, VPN, DNS)
 - Workload runner module path: `templates/workload/github-runner/` (subscription-scoped deployment in Online LZ)
+- Runner platform now includes the VM, Key Vault, and Key Vault private endpoint; the VM system-assigned managed identity should use Key Vault data-plane RBAC, not access policies
 - `parameters.json` at repo root maps subscription IDs and location variables used by CI/CD workflows
 
 ## Protected Resources
@@ -71,6 +73,9 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
    - **Run 24607691490**: Currently in progress (as of 2026-04-18 ~10:25 AM)
    - **Root cause**: ALZ governance templates contain hundreds of policy definitions; each What-If makes many ARM API calls, exhausting the 150 requests/minute tenant-level limit
    - **Workaround**: Wait 1-2 minutes between workflow runs; don't run CI and CD simultaneously
+6. **Shared runner platform**: CD on merge should now include the runner stack automatically after approval.
+  - Deploys the runner VM, runner subnet resources, runner Key Vault, and Key Vault private endpoint in Online LZ.
+  - Operator still performs two manual post-deploy steps: upload SSH public/private key secrets to the new vault and register the runner with a just-in-time GitHub token.
 
 ### Azure Identity (for troubleshooting)
 - **Apply UAMI**: `id-alz-mgmt-westus2-apply-001` — principal `a8915b05-4eca-49f7-917a-40cac673b1c5` — has Owner at MG `alz` + Owner on sub `966a8e3c`
@@ -117,6 +122,7 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 | Policy changes/exclusions | `README.md` (Policy Exclusions), this file (Governance Notes) |
 | CI/CD workflow changes | `README.md` (CI/CD Pipelines) |
 | Identity/RBAC changes | `README.md` (Troubleshooting - Azure Identity), this file (Azure Identity) |
+| Runner platform changes | `README.md` (Shared Runner Platform, CI/CD Pipelines), this file (Networking Design, Key Conventions, Pending / In Progress) |
 | Completed planned work | Remove from "Planned Future Work" in both files |
 
 ### Documentation Checklist

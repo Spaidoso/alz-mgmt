@@ -59,23 +59,22 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 - The Online LZ subscription is intentionally **NOT peered** to the hub network
 - Subscriptions `7e1b60b8` (Spaid Family Core Infra LZ) and `67251182` (Spaid Family MGMT) are **not managed** by this repo
 
-## Deployment State (as of 2026-04-18)
+## Deployment State (as of 2026-04-24)
 
 ### Completed
 1. **Bootstrap (Phase 2)**: 496 resources via Terraform (one-time). GitHub repos, UAMIs, OIDC federated credentials, MG `alz`, branch protection, environments, Actions variables all created.
 2. **Phase 3 PR #1**: Merged. Customized networking (Firewall Basic, VpnGw1AZ, no Bastion/ER/DDoS/DNS Resolver, single region) and governance (DDoS policy exclusion, Online LZ sub placement, single-element parLocations).
 3. **CI pipeline**: Validated — Bicep build/lint passed, all 18 what-if steps passed.
 4. **RBAC fixes**: Apply UAMI granted Owner + Plan UAMI granted Reader directly on sub `966a8e3c` (wasn't under `alz` MG yet).
+5. **CD pipeline - governance/logging/networking**: Succeeded. All governance, logging, and hub networking resources deployed.
+6. **Runner platform PRs merged**: `alz-mgmt-templates` PR #7 (parameterOverrides action support + RUNNER_SSH_PUBLIC_KEY wiring) and `alz-mgmt` PR #11 (secrets: inherit) both merged.
+7. **`RUNNER_SSH_PUBLIC_KEY` secret**: Set in both `alz-mgmt-plan` and `alz-mgmt-apply` GitHub environments.
 
 ### Pending / In Progress
-5. **CD pipeline**: Multiple runs have hit ARM API rate limits during What-If phase.
-   - **Run 24578771115**: Failed at "Plan: Governance-Platform" step due to `Too Many Requests on TenantandUserLevel`
-   - **Run 24607691490**: Currently in progress (as of 2026-04-18 ~10:25 AM)
-   - **Root cause**: ALZ governance templates contain hundreds of policy definitions; each What-If makes many ARM API calls, exhausting the 150 requests/minute tenant-level limit
-   - **Workaround**: Wait 1-2 minutes between workflow runs; don't run CI and CD simultaneously
-6. **Shared runner platform**: CD on merge should now include the runner stack automatically after approval.
-  - Deploys the runner VM, runner subnet resources, runner Key Vault, and Key Vault private endpoint in Online LZ.
-  - Operator still performs two manual post-deploy steps: upload SSH public/private key secrets to the new vault and register the runner with a just-in-time GitHub token.
+8. **CD pipeline - runner What-If**: Failing with PowerShell parameter set conflict (`TemplateParameterFile` and `TemplateParameterObject` are mutually exclusive in Az PowerShell cmdlets). Fix is in `alz-mgmt-templates` PR (amend to #7 branch or new PR) — uses `bicep build-params` to compile params to ARM JSON, merges overrides, and passes only `TemplateParameterObject`.
+9. **Shared runner platform**: Not yet deployed. Pending the above fix merging and a successful CD run with manual approval in `alz-mgmt-apply`.
+  - Post-deploy operator steps: upload SSH private key to Key Vault as `ssh-private` secret; register runner with just-in-time GitHub token.
+  - SSH public key is injected into the VM at deploy time via the `RUNNER_SSH_PUBLIC_KEY` pipeline secret.
 
 ### Azure Identity (for troubleshooting)
 - **Apply UAMI**: `id-alz-mgmt-westus2-apply-001` — principal `a8915b05-4eca-49f7-917a-40cac673b1c5` — has Owner at MG `alz` + Owner on sub `966a8e3c`

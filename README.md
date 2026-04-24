@@ -193,9 +193,9 @@ The shared runner deployment now creates:
 
 Operational steps after the first approved CD run:
 
-1. Upload the SSH public key and private key to the new Key Vault as separate secrets.
+1. Upload the SSH **private** key to the new Key Vault as the `ssh-private` secret (the public key is injected into the VM at deploy time via the `RUNNER_SSH_PUBLIC_KEY` pipeline secret, but storing it in Key Vault too is optional for reference).
 2. Perform the just-in-time GitHub runner registration step.
-3. Validate the runner can resolve the Key Vault over private link and that future workload deployments can reuse the stored public key.
+3. Validate the runner can resolve the Key Vault over private link and that future workload deployments can reuse the stored SSH material.
 
 ---
 
@@ -246,7 +246,7 @@ Identity RG: `rg-alz-mgmt-identity-westus2-001` in subscription `e4fdb784`
 
 ### GitHub CLI Authentication
 
-The Azure org has SAML enforcement. Use a classic PAT (`ghp_` prefix) via `$env:GH_TOKEN`, NOT OAuth (`gho_`).
+Standard OAuth (`gho_`) tokens work fine for the Spaidoso org (no SAML enforcement). Ensure the token has `repo` and `workflow` scopes.
 
 ---
 

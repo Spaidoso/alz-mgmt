@@ -87,7 +87,7 @@ This is an **Azure Landing Zones (ALZ)** management repository using **Bicep** f
 - **Local bootstrap output**: `C:\Users\jospaid\alz-accelerator\output` (Terraform state — only needed if tearing down bootstrap resources)
 - **Config files**: `C:\Users\jospaid\alz-accelerator\config\inputs.yaml` and `platform-landing-zone.yaml`
 - **Bootstrap module version**: 7.2.0 (pinned in inputs.yaml to avoid GitHub API download issues with SAML)
-- **`gh` CLI**: Must use classic PAT (`ghp_` prefix) via `$env:GH_TOKEN`, NOT OAuth (`gho_`). The Azure org has SAML enforcement that blocks `gho_` tokens.
+- **`gh` CLI**: Standard OAuth (`gho_`) tokens work fine for the Spaidoso org (no SAML enforcement).
 
 ## Planned Future Work
 
@@ -151,4 +151,4 @@ Before completing any PR, verify:
 | `Too Many Requests on TenantandUserLevel` | ARM API rate limit (150 req/min) | Wait 1-2 min, re-run. Don't run CI+CD simultaneously |
 | `AuthorizationFailed` on What-If | UAMI lacks permissions at scope | Add Reader (plan) or Owner (apply) at appropriate MG/sub |
 | Bicep build errors | Outdated ALZ library | Run `tooling/Update-AlzLibraryReferences.ps1` |
-| GitHub CLI auth fails with `gho_*` token | SAML enforcement blocks OAuth | Use classic PAT (`ghp_*`) via `$env:GH_TOKEN` |
+| GitHub CLI auth fails with `gho_*` token | Token lacks required scopes | Verify token has `repo` and `workflow` scopes |

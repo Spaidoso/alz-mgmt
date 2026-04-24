@@ -81,3 +81,4 @@ jobs:
       core-logging: ${{ github.event_name != 'workflow_dispatch' && true || inputs.core == true }}
       networking-hubnetworking: ${{ github.event_name != 'workflow_dispatch' && true || inputs.networking == true }}
       workload-github-runner: ${{ github.event_name != 'workflow_dispatch' && true || inputs.workload-github-runner == true }}
+    secrets: inherit
